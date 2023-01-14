@@ -1,0 +1,20 @@
+./main 0 1 < input1
+FCFS 1 cores
+
+./main 0 2 < input2
+FCFS 2 cores
+
+./main 0 1 < input3
+SRTF 1 core
+
+./main 0 1 < input4
+./main 2 1 < input4
+./main 4 1 < input4
+FCFS SRTF SPZW
+porównać wszystkie algorytmy
+
+./main 0 2 < input4
+./main 2 2 < input4
+./main 4 2 < input4
+FCFS SRTF SPZW
+porównać wszystkie algorytmy dla 2 rdzeni

@@ -55,19 +55,84 @@ void FCFS(Core **Cores, int number_of_cores, Process *processes, int number_of_p
     }
 }
 
-void makeAction(int time, Core **Cores, int number_of_cores)
+void SRTF(Core **Cores, int number_of_cores, Process *processes, int number_of_processes)
 {
+    int before = 100;
+    int index = -1;
+    for (int i = 0; i < number_of_cores; i++)
+    {
+        if (Cores[0][i].active_process != NULL) // if core is processing, deactivate
+        {
+            Cores[0][i].active_process->active = 0;
+            Cores[0][i].active_process = NULL;
+        }
+    }
 
     for (int i = 0; i < number_of_cores; i++)
     {
-        printf("Time moment:%d ", time);
+        for (int j = 0; j < number_of_processes; j++)
+        {
+            if (processes[j].rt < before && processes[j].ex != 1 && processes[j].active != 1)
+            {
+                before = processes[j].rt; // find process with shortest remaining time;
+                index = j;
+            }
+        }
+        if (index != -1)
+        {
+            Cores[0][i].active_process = &processes[index];
+            Cores[0][i].active_process->active = 1;
+        }
+        index = -1;
+        before = 100;
+    }
+}
+
+void SPZW(Core **Cores, int number_of_cores, Process *processes, int number_of_processes)
+{
+    int before = 100;
+    int index = -1;
+    for (int i = 0; i < number_of_cores; i++)
+    {
+        if (Cores[0][i].active_process != NULL) // if core is processing, deactivate
+        {
+            Cores[0][i].active_process->active = 0;
+            Cores[0][i].active_process = NULL;
+        }
+    }
+
+    for (int i = 0; i < number_of_cores; i++)
+    {
+        for (int j = 0; j < number_of_processes; j++)
+        {
+            if (processes[j].pi < before && processes[j].ex != 1 && processes[j].active != 1)
+            {
+                before = processes[j].pi; // find process with highest priority(0);
+                index = j;
+            }
+        }
+        if (index != -1)
+        {
+            Cores[0][i].active_process = &processes[index];
+            Cores[0][i].active_process->active = 1;
+        }
+        index = -1;
+        before = 100;
+    }
+}
+
+void makeAction(int time, Core **Cores, int number_of_cores)
+{
+    printf("Time moment:%d |", time);
+    for (int i = 0; i < number_of_cores; i++)
+    {
         if ((*Cores)[i].active_process == NULL)
         {
-            printf("core number:%d process id:%d \n", i + 1, -1);
+            printf(" core:%d id:%d |", i + 1, -1);
             continue;
         }
 
-        printf("core number:%d process id:%d \n", i + 1, (*Cores)[i].active_process->id);
+        printf(" core:%d id:%d |", i + 1, (*Cores)[i].active_process->id);
         (*Cores)[i].active_process->rt -= 1;
         if ((*Cores)[i].active_process->rt == 0)
         {
@@ -77,6 +142,7 @@ void makeAction(int time, Core **Cores, int number_of_cores)
             (*Cores)[i].active_process = NULL;
         }
     }
+    printf("\n");
 }
 
 void makeActionSimpleDisplay(int time, Core **Cores, int number_of_cores)
@@ -117,9 +183,24 @@ int checkIfAllExecuted(Process *processes, int number_of_processes)
     return left_to_execute;
 }
 
+void Simulation(int strategy, int t, Core **pointer_to_cores, int num_of_cores, Process *processes, int number_of_processes, char display)
+{
+    if (strategy == 0)
+        FCFS(pointer_to_cores, num_of_cores, processes, number_of_processes);
+    else if (strategy == 2)
+        SRTF(pointer_to_cores, num_of_cores, processes, number_of_processes);
+    else if (strategy == 4)
+        SPZW(pointer_to_cores, num_of_cores, processes, number_of_processes);
+    if (display == 'c')
+        makeAction(t, pointer_to_cores, num_of_cores);
+    else
+        makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
+}
+
 int main(int argc, char *argv[])
 {
     int strategy = -1, num_of_cores = 1, preemption_time = 1;
+    char display;
     Core *cores;
     Core **pointer_to_cores;
     switch (argc)
@@ -129,29 +210,20 @@ int main(int argc, char *argv[])
         return -1;
         break;
     case 2:
-        strategy = atoi(argv[1]);
-        if (strategy != 0 && strategy != 1 && strategy != 2) // allowed identifiers
-        {
-            printf("Unexpected startegy id %d\n", strategy);
-            return -1;
-        }
-        cores = malloc(num_of_cores * sizeof(Core));
-        for (int b = 0; b < num_of_cores; b++)
-        {
-            cores[b].active_process = NULL;
-        }
+        printf("Missing arguments\n");
+        return -1;
         break;
     case 3:
         strategy = atoi(argv[1]);
-        num_of_cores = atoi(argv[2]);
-        if (strategy != 0 && strategy != 1 && strategy != 2) // allowed identifiers
+        display = argv[2][0];
+        if (strategy != 0 && strategy != 2 && strategy != 4) // allowed identifiers
         {
             printf("Unexpected startegy id %d\n", strategy);
             return -1;
         }
-        if (num_of_cores < 1)
+        if (display != 's' && display != 'c')
         {
-            printf("Unexpected number of cores %d\n", num_of_cores);
+            printf("Wrong display parameter %d\n", num_of_cores);
             return -1;
         }
         cores = malloc(num_of_cores * sizeof(Core));
@@ -163,8 +235,39 @@ int main(int argc, char *argv[])
     case 4:
         strategy = atoi(argv[1]);
         num_of_cores = atoi(argv[2]);
+        display = argv[3][0];
+        if (strategy != 0 && strategy != 2 && strategy != 4) // allowed identifiers
+        {
+            printf("Unexpected startegy id %d\n", strategy);
+            return -1;
+        }
+        if (num_of_cores < 1)
+        {
+            printf("Unexpected number of cores %d\n", num_of_cores);
+            return -1;
+        }
+        if (display != 's' && display != 'c')
+        {
+            printf("Wrong display parameter %d\n", num_of_cores);
+            return -1;
+        }
+        if (display != 's' && display != 'c')
+        {
+            printf("Wrong display parameter %d\n", num_of_cores);
+            return -1;
+        }
+        cores = malloc(num_of_cores * sizeof(Core));
+        for (int b = 0; b < num_of_cores; b++)
+        {
+            cores[b].active_process = NULL;
+        }
+        break;
+    case 5:
+        strategy = atoi(argv[1]);
+        num_of_cores = atoi(argv[2]);
         preemption_time = atoi(argv[3]);
-        if (strategy != 0 && strategy != 1 && strategy != 2) // allowed identifiers
+        display = argv[4][0];
+        if (strategy != 0 && strategy != 2 && strategy != 4) // allowed identifiers
         {
             printf("Unexpected startegy id %d\n", strategy);
             return -1;
@@ -202,8 +305,7 @@ int main(int argc, char *argv[])
         t = i;
         if (c == '\n')
         {
-            FCFS(pointer_to_cores, num_of_cores, processes, number_of_processes);
-            makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
+            Simulation(strategy, t, pointer_to_cores, num_of_cores, processes, number_of_processes, display);
             continue;
         }
         if (c == '-') // end reading lines
@@ -215,20 +317,21 @@ int main(int argc, char *argv[])
             readProcess(&processes[number_of_processes - 1]);
             scanf("%c", &c);
         } // readed all of the processes passed in time t
-        FCFS(pointer_to_cores, num_of_cores, processes, number_of_processes);
-        makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
+        Simulation(strategy, t, pointer_to_cores, num_of_cores, processes, number_of_processes, display);
     }
 
     int left;
     left = checkIfAllExecuted(processes, number_of_processes);
     while (left != 0)
     {
-        FCFS(pointer_to_cores, num_of_cores, processes, number_of_processes);
-        makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
+        Simulation(strategy, t, pointer_to_cores, num_of_cores, processes, number_of_processes, display);
         t++;
         left = checkIfAllExecuted(processes, number_of_processes);
     }
-    makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
+    if (display == 'c')
+        makeAction(t, pointer_to_cores, num_of_cores);
+    else
+        makeActionSimpleDisplay(t, pointer_to_cores, num_of_cores);
 
     free(cores);
 }
